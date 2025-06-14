@@ -1,3 +1,4 @@
+// src/app/auth/login/page.tsx
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,13 +18,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
-import { Mail, Lock } from 'lucide-react';
-import { useSearchParams, useRouter } from 'next/navigation'; // useRouter for future redirect
+import { Mail, Lock, Loader2 } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebaseConfig";
+import { useAuth } from "@/contexts/auth-context";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(1, { message: "Password is required." }), // Min 1 for quicker testing
+  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -31,9 +35,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const router = useRouter(); // For future redirect
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState(searchParams.get('role') || 'student');
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -50,23 +55,63 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!authLoading && user) {
+      const redirectUrl = searchParams.get('redirect');
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else {
+        router.push(activeTab === 'admin' ? '/admin/dashboard' : '/student/profile');
+      }
+    }
+  }, [user, authLoading, router, searchParams, activeTab]);
+
 
   async function onSubmit(values: LoginFormValues) {
-    // Simulate login
-    console.log("Logging in as", activeTab, "with values:", values);
-    toast({
-      title: "Login Attempt",
-      description: `Simulating login for ${activeTab} with email ${values.email}.`,
-    });
-    // In a real app, you'd call Firebase Auth here
-    // e.g., signInWithEmailAndPassword(auth, values.email, values.password)
-    // and redirect based on role on success
-    if (activeTab === 'admin') {
-      // router.push('/admin/dashboard');
-    } else {
-      // router.push('/student/profile');
+    setIsSubmitting(true);
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      toast({
+        title: "Login Successful",
+        description: `Welcome back! Redirecting...`,
+      });
+      // Redirection is handled by useEffect above
+    } catch (error: any) {
+      console.error("Login error:", error);
+      let errorMessage = "Failed to login. Please check your credentials.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        errorMessage = "Invalid email or password.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email format.";
+      }
+      toast({
+        title: "Login Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   }
+  
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (user) {
+     // Already logged in, effect will redirect. Show minimal loading or null.
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-2">Redirecting...</p>
+      </div>
+    );
+  }
+
 
   return (
     <Card className="w-full max-w-md shadow-2xl">
@@ -92,7 +137,7 @@ export default function LoginPage() {
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input placeholder="your.email@example.com" {...field} className="pl-10" />
+                          <Input placeholder="your.email@example.com" {...field} className="pl-10" disabled={isSubmitting} />
                         </FormControl>
                       </div>
                       <FormMessage />
@@ -108,14 +153,17 @@ export default function LoginPage() {
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input type="password" placeholder="********" {...field} className="pl-10" />
+                          <Input type="password" placeholder="********" {...field} className="pl-10" disabled={isSubmitting} />
                         </FormControl>
                       </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">Login as Student</Button>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Login as Student
+                </Button>
               </form>
             </Form>
           </TabsContent>
@@ -131,7 +179,7 @@ export default function LoginPage() {
                        <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input placeholder="admin@jbi.ac.in" {...field} className="pl-10" />
+                          <Input placeholder="admin@jbi.ac.in" {...field} className="pl-10" disabled={isSubmitting} />
                         </FormControl>
                       </div>
                       <FormMessage />
@@ -147,14 +195,17 @@ export default function LoginPage() {
                        <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input type="password" placeholder="********" {...field} className="pl-10" />
+                          <Input type="password" placeholder="********" {...field} className="pl-10" disabled={isSubmitting} />
                         </FormControl>
                       </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">Login as Admin</Button>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Login as Admin
+                </Button>
               </form>
             </Form>
           </TabsContent>

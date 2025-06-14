@@ -1,10 +1,11 @@
+// src/app/admin/dashboard/page.tsx
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart, LineChart, PieChart as ChartPieIcon, Users, BookOpen, GraduationCap, FileText, PlusCircle } from "lucide-react";
+import { PlusCircle, Users, BookOpen, GraduationCap, FileText } from "lucide-react";
 import Link from "next/link";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import { ChartContainer, ChartLegendContent } from "@/components/ui/chart";
 import { Bar, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend as RechartsLegend, Line } from "recharts";
 
 const monthlyIntakeData = [
@@ -38,9 +39,9 @@ export default function AdminDashboardPage() {
           <h2 className="text-3xl font-bold tracking-tight font-headline">Admin Dashboard</h2>
           <p className="text-muted-foreground">Overview of institute activities and student data.</p>
         </div>
-        <Link href="/admin/enroll-student">
-          <Button><PlusCircle className="mr-2 h-4 w-4" /> Add New Student</Button>
-        </Link>
+        <Button asChild>
+          <Link href="/admin/enroll-student"><PlusCircle className="mr-2 h-4 w-4" /> Add New Student</Link>
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -122,7 +123,7 @@ export default function AdminDashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={certificateStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} labelLine={false} 
-                    label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+                    label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
                         const RADIAN = Math.PI / 180;
                         const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
                         const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -149,4 +150,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
