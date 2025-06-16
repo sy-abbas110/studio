@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -5,13 +6,18 @@ import { Menu, School } from 'lucide-react'; // Using School as a placeholder lo
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/courses-overview', label: 'Courses' }, // Public view of courses
+  { href: '/courses-overview', label: 'Courses' },
+  { href: '/public/students', label: 'Student Directory' },
+  { href: '/public/certificates', label: 'Certificate Directory' },
   { href: '/contact', label: 'Contact Us' },
 ];
 
 const authLinks = [
-  { href: '/auth/login', label: 'Login', variant: 'outline' as const },
-  { href: '/auth/admin-register', label: 'Admin Register', variant: 'default' as const },
+  { href: '/auth/login?role=student', label: 'Student Login', variant: 'outline' as const },
+  { href: '/auth/login?role=admin', label: 'Admin Login', variant: 'default' as const },
+  // Removed Admin Register from public navbar for now, it's less common for direct public access.
+  // It can be linked from admin login page or a specific admin info page.
+  // { href: '/auth/admin-register', label: 'Admin Register', variant: 'default' as const },
 ];
 
 export default function Navbar() {
@@ -24,7 +30,7 @@ export default function Navbar() {
             Jai Bharat Management Hub
           </span>
         </Link>
-        <nav className="hidden flex-1 items-center space-x-6 text-sm font-medium md:flex">
+        <nav className="hidden flex-1 items-center space-x-4 text-sm font-medium md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.label}
@@ -56,7 +62,7 @@ export default function Navbar() {
                   <Link
                     key={link.label}
                     href={link.href}
-                    className="transition-colors hover:text-foreground/80 text-foreground/60 text-lg"
+                    className="transition-colors hover:text-foreground/80 text-foreground/60 text-lg py-1"
                   >
                     {link.label}
                   </Link>
